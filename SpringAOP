@@ -1,0 +1,132 @@
+package com.talentstream.aop;
+
+
+import java.time.LocalDateTime;
+
+import org.aspectj.lang.JoinPoint;
+import org.aspectj.lang.annotation.AfterReturning;
+import org.aspectj.lang.annotation.Aspect;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Component;
+
+import com.talentstream.dto.RegistrationDTO;
+import com.talentstream.entity.Applicant;
+import com.talentstream.entity.UserActivity;
+import com.talentstream.repository.RegisterRepository;
+import com.talentstream.repository.UserActivityRepository;
+
+@Aspect
+@Component
+public class UserActivityLogger {
+
+	@Autowired
+	private UserActivityRepository repo;
+	
+	@Autowired
+	private RegisterRepository repository;
+
+	
+	@AfterReturning(pointcut = "execution(* com.talentstream.service.RegisterService.saveapplicant(..))", returning = "response")
+	public void logRegistration(JoinPoint joinPoint, Object response) {
+	    if (response instanceof ResponseEntity) {
+	        ResponseEntity<?> entity = (ResponseEntity<?>) response;
+	        if (entity.getStatusCode().is2xxSuccessful()) {
+	            Object[] args = joinPoint.getArgs();
+	            if (args.length > 0 && args[0] instanceof RegistrationDTO) {
+	                RegistrationDTO dto = (RegistrationDTO) args[0];
+	                Applicant applicant = repository.findByEmail(dto.getEmail());
+	                if (applicant != null) {
+	                    Long userId = applicant.getId();
+	                    saveActivity(userId, "REGISTER");
+	                }
+	            }
+	        }
+	    }
+	}
+
+	
+	@AfterReturning(
+		    pointcut = "execution(* com.talentstream.service.FinRecommendedJobService.recommendJobsForApplicant(..))", 
+		    returning = "jobs")
+		public void logRecommendedJobsViewed(JoinPoint joinPoint, Object jobs) {
+		    Object[] args = joinPoint.getArgs();
+		    if (args.length > 0 && args[0] instanceof Long) {
+		        Long applicantId = (Long) args[0];
+		        saveActivity(applicantId, "RECOMMENDED_JOBS_VIEWED");
+		    }
+		}
+	@AfterReturning(
+		    pointcut = "execution(* com.talentstream.service.FinRecommendedJobService.countRecommendedJobsForApplicant(..))", 
+		    returning = "count")
+		public void logRecommendedJobsCountViewed(JoinPoint joinPoint, Object count) {
+		    Object[] args = joinPoint.getArgs();
+		    if (args.length > 0 && args[0] instanceof Long) {
+		        Long applicantId = (Long) args[0];
+		        saveActivity(applicantId, "RECOMMENDED_JOBS_COUNT_VIEWED");
+		    }
+		}
+
+	
+	@AfterReturning(pointcut = "execution(* com.talentstream.service.RegisterService.googleSignIn(..))", returning = "applicant")
+	public void logRegister(JoinPoint joinPoint, Object applicant) {
+	    if (applicant instanceof Applicant) {
+	        Long userId = ((Applicant) applicant).getId();
+	        System.out.println("-----------------iam in aspect-----------");
+	        saveActivity(userId, "GOOGLE_LOGIN");
+	    }
+	}
+
+	@AfterReturning(
+		    pointcut = "execution(* com.talentstream.service.RegisterService.login(..))",
+		    returning = "applicant")
+		public void logLogin(JoinPoint joinPoint, Object applicant) {
+		    if (applicant instanceof Applicant) {
+		        Long userId = ((Applicant) applicant).getId();
+		        saveActivity(userId, "LOGIN");
+		    }
+		}
+
+	@AfterReturning(
+		    pointcut = "execution(* com.talentstream.service.RegisterService.addApplicant(..))",
+		    returning = "applicant")
+		public void logResetPassword(JoinPoint joinPoint, Object applicant) {
+		    if (applicant instanceof Applicant) {
+		        Long userId = ((Applicant) applicant).getId();
+		        saveActivity(userId, "RESET_PASSWORD");
+		    }
+		}
+
+	@AfterReturning(
+		    pointcut = "execution(* com.talentstream.service.SavedJobService.getSavedJobsForApplicant(..))")
+		public void logFetchSavedJobs(JoinPoint joinPoint) {
+		    Object[] args = joinPoint.getArgs();
+
+		    if (args.length >= 1 && args[0] instanceof Long) {
+		        Long applicantId = (Long) args[0];
+		        saveActivity(applicantId, "FETCH_SAVED_JOBS");
+		    }
+		}
+
+	@AfterReturning(
+		    pointcut = "execution(* com.talentstream.service.SavedJobService.countSavedJobsForApplicant(..))")
+		public void logCountSavedJobs(JoinPoint joinPoint) {
+		    Object[] args = joinPoint.getArgs();
+
+		    if (args.length >= 1 && args[0] instanceof Long) {
+		        Long applicantId = (Long) args[0];
+		        saveActivity(applicantId, "COUNT_SAVED_JOBS");
+		    }
+		}
+
+
+	private void saveActivity(Long userId, String action) {
+		UserActivity activity = new UserActivity();
+		activity.setUserId(userId);
+		activity.setActionType(action);
+		activity.setTimestamp(LocalDateTime.now());
+		System.out.println("-----------------iam in aspect repoooooooooo-----------");
+		repo.save(activity);
+	}
+
+}
