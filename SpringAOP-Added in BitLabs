@@ -2,18 +2,18 @@ package com.talentstream.aop;
 
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.aspectj.lang.JoinPoint;
+import org.aspectj.lang.annotation.After;
 import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Aspect;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
-import com.talentstream.dto.RegistrationDTO;
 import com.talentstream.entity.Applicant;
 import com.talentstream.entity.UserActivity;
-import com.talentstream.repository.RegisterRepository;
 import com.talentstream.repository.UserActivityRepository;
 
 @Aspect
@@ -23,51 +23,66 @@ public class UserActivityLogger {
 	@Autowired
 	private UserActivityRepository repo;
 	
-	@Autowired
-	private RegisterRepository repository;
-
-	
-	@AfterReturning(pointcut = "execution(* com.talentstream.service.RegisterService.saveapplicant(..))", returning = "response")
-	public void logRegistration(JoinPoint joinPoint, Object response) {
-	    if (response instanceof ResponseEntity) {
-	        ResponseEntity<?> entity = (ResponseEntity<?>) response;
-	        if (entity.getStatusCode().is2xxSuccessful()) {
-	            Object[] args = joinPoint.getArgs();
-	            if (args.length > 0 && args[0] instanceof RegistrationDTO) {
-	                RegistrationDTO dto = (RegistrationDTO) args[0];
-	                Applicant applicant = repository.findByEmail(dto.getEmail());
-	                if (applicant != null) {
-	                    Long userId = applicant.getId();
-	                    saveActivity(userId, "REGISTER");
-	                }
-	            }
-	        }
-	    }
-	}
-
-	
-	@AfterReturning(
-		    pointcut = "execution(* com.talentstream.service.FinRecommendedJobService.recommendJobsForApplicant(..))", 
-		    returning = "jobs")
-		public void logRecommendedJobsViewed(JoinPoint joinPoint, Object jobs) {
-		    Object[] args = joinPoint.getArgs();
-		    if (args.length > 0 && args[0] instanceof Long) {
-		        Long applicantId = (Long) args[0];
-		        saveActivity(applicantId, "RECOMMENDED_JOBS_VIEWED");
-		    }
-		}
-	@AfterReturning(
-		    pointcut = "execution(* com.talentstream.service.FinRecommendedJobService.countRecommendedJobsForApplicant(..))", 
-		    returning = "count")
-		public void logRecommendedJobsCountViewed(JoinPoint joinPoint, Object count) {
-		    Object[] args = joinPoint.getArgs();
-		    if (args.length > 0 && args[0] instanceof Long) {
-		        Long applicantId = (Long) args[0];
-		        saveActivity(applicantId, "RECOMMENDED_JOBS_COUNT_VIEWED");
-		    }
-		}
-
-	
+//	@Autowired
+//	private RegisterRepository repository;
+//
+//	
+//	@AfterReturning(pointcut = "execution(* com.talentstream.service.RegisterService.saveapplicant(..))", returning = "response")
+//	public void logRegistration(JoinPoint joinPoint, Object response) {
+//	    if (response instanceof ResponseEntity) {
+//	        ResponseEntity<?> entity = (ResponseEntity<?>) response;
+//	        if (entity.getStatusCode().is2xxSuccessful()) {
+//	            Object[] args = joinPoint.getArgs();
+//	            if (args.length > 0 && args[0] instanceof RegistrationDTO) {
+//	                RegistrationDTO dto = (RegistrationDTO) args[0];
+//	                Applicant applicant = repository.findByEmail(dto.getEmail());
+//	                if (applicant != null) {
+//	                    Long userId = applicant.getId();
+//	                    saveActivity(userId, "REGISTER");
+//	                }
+//	            }
+//	        }
+//	    }
+//	}
+//	
+//	
+//	
+//	@AfterReturning(
+//		    pointcut = "execution(* com.talentstream.service.ApplyJobService.ApplicantApplyJob(..))",
+//		    returning = "result")
+//		public void logApplyJob(JoinPoint joinPoint, Object result) {
+//		    Object[] args = joinPoint.getArgs();
+//
+//		    if (args.length >= 2 && args[0] instanceof Long) {
+//		        Long applicantId = (Long) args[0];
+//		        saveActivity(applicantId, "APPLY_JOB");
+//		    }
+//		}
+//
+//
+//	
+//	@AfterReturning(
+//		    pointcut = "execution(* com.talentstream.service.FinRecommendedJobService.recommendJobsForApplicant(..))", 
+//		    returning = "jobs")
+//		public void logRecommendedJobsViewed(JoinPoint joinPoint, Object jobs) {
+//		    Object[] args = joinPoint.getArgs();
+//		    if (args.length > 0 && args[0] instanceof Long) {
+//		        Long applicantId = (Long) args[0];
+//		        saveActivity(applicantId, "RECOMMENDED_JOBS_VIEWED");
+//		    }
+//		}
+//	@AfterReturning(
+//		    pointcut = "execution(* com.talentstream.service.FinRecommendedJobService.countRecommendedJobsForApplicant(..))", 
+//		    returning = "count")
+//		public void logRecommendedJobsCountViewed(JoinPoint joinPoint, Object count) {
+//		    Object[] args = joinPoint.getArgs();
+//		    if (args.length > 0 && args[0] instanceof Long) {
+//		        Long applicantId = (Long) args[0];
+//		        saveActivity(applicantId, "RECOMMENDED_JOBS_COUNT_VIEWED");
+//		    }
+//		}
+//
+//	
 	@AfterReturning(pointcut = "execution(* com.talentstream.service.RegisterService.googleSignIn(..))", returning = "applicant")
 	public void logRegister(JoinPoint joinPoint, Object applicant) {
 	    if (applicant instanceof Applicant) {
@@ -86,39 +101,136 @@ public class UserActivityLogger {
 		        saveActivity(userId, "LOGIN");
 		    }
 		}
+	
+//	@AfterReturning(
+//		    pointcut = "execution(* com.talentstream.controller.*.*(..))",
+//		    returning = "response")
+//		public void logViewJob(JoinPoint joinPoint, Object response) {
+//		    Object[] args = joinPoint.getArgs();
+//
+//		    if (args.length >= 2 && args[0] instanceof Long && args[1] instanceof Long) {
+//		        Long jobId = (Long) args[0];
+//		        Long applicantId = (Long) args[1];
+//
+//		        saveActivity(applicantId, "viewJob"); // ✅ applicantId is userId here
+//		    }
+//		}
 
-	@AfterReturning(
-		    pointcut = "execution(* com.talentstream.service.RegisterService.addApplicant(..))",
-		    returning = "applicant")
-		public void logResetPassword(JoinPoint joinPoint, Object applicant) {
-		    if (applicant instanceof Applicant) {
-		        Long userId = ((Applicant) applicant).getId();
-		        saveActivity(userId, "RESET_PASSWORD");
-		    }
-		}
+//
+//	@AfterReturning(
+//		    pointcut = "execution(* com.talentstream.service.RegisterService.addApplicant(..))",
+//		    returning = "applicant")
+//		public void logResetPassword(JoinPoint joinPoint, Object applicant) {
+//		    if (applicant instanceof Applicant) {
+//		        Long userId = ((Applicant) applicant).getId();
+//		        saveActivity(userId, "RESET_PASSWORD");
+//		    }
+//		}
+//
+//	@AfterReturning(
+//		    pointcut = "execution(* com.talentstream.service.SavedJobService.getSavedJobsForApplicant(..))")
+//		public void logFetchSavedJobs(JoinPoint joinPoint) {
+//		    Object[] args = joinPoint.getArgs();
+//
+//		    if (args.length >= 1 && args[0] instanceof Long) {
+//		        Long applicantId = (Long) args[0];
+//		        saveActivity(applicantId, "FETCH_SAVED_JOBS");
+//		    }
+//		}
+//
+//	@AfterReturning(
+//		    pointcut = "execution(* com.talentstream.service.SavedJobService.countSavedJobsForApplicant(..))")
+//		public void logCountSavedJobs(JoinPoint joinPoint) {
+//		    Object[] args = joinPoint.getArgs();
+//
+//		    if (args.length >= 1 && args[0] instanceof Long) {
+//		        Long applicantId = (Long) args[0];
+//		        saveActivity(applicantId, "COUNT_SAVED_JOBS");
+//		    }
+//		}
+//
+//	
+//	@AfterReturning("execution(* com.talentstream.controller.*.*(..))")
+//	public void commonActivityLog(JoinPoint joinPoint) {
+//		String methodName = joinPoint.getSignature().getName();
+//		System.out.println("Method Name is: "+methodName);
+//	}
+	
+	
+//	@AfterReturning("execution(* com.talentstream.controller.*.*(..))")
+//	public void commonActivityLog1(JoinPoint joinPoint) {
+//	    String methodName = joinPoint.getSignature().getName();
+//	    System.out.println("Method Name is: " + methodName);
+//
+//	    
+//	    Object[] args = joinPoint.getArgs();
+//	  
+//
+//	    // Try to find userId or applicantId from the method arguments
+//	    Long userId = null;
+//	    for (Object arg : args) {
+//	        if (arg instanceof Long) {
+//	            userId = (Long) arg;
+//	            break; // only take the first Long if multiple are present
+//	        } else if (arg instanceof Applicant) {
+//	            Applicant applicant = (Applicant) arg;
+//	            userId = applicant.getId(); // assuming getId() exists
+//	            break;
+//	        }
+//	    }
+//
+//	    if (userId != null) {
+//	        saveActivity(userId, methodName);
+//	    } else {
+//	        System.out.println("User ID not found in method arguments.");
+//	    }
+//	}
+//
+//
+	
+	
+	private static final ThreadLocal<Boolean> activityLogged = ThreadLocal.withInitial(() -> false);
 
-	@AfterReturning(
-		    pointcut = "execution(* com.talentstream.service.SavedJobService.getSavedJobsForApplicant(..))")
-		public void logFetchSavedJobs(JoinPoint joinPoint) {
-		    Object[] args = joinPoint.getArgs();
+    @AfterReturning("execution(* com.talentstream.service.*.*(..))")
+    public void logUserActivity(JoinPoint joinPoint) {
+        // Prevent duplicate logging
+        if (activityLogged.get()) {
+            return;
+        }
 
-		    if (args.length >= 1 && args[0] instanceof Long) {
-		        Long applicantId = (Long) args[0];
-		        saveActivity(applicantId, "FETCH_SAVED_JOBS");
-		    }
-		}
+        String methodName = joinPoint.getSignature().getName();
+        Object[] args = joinPoint.getArgs();
 
-	@AfterReturning(
-		    pointcut = "execution(* com.talentstream.service.SavedJobService.countSavedJobsForApplicant(..))")
-		public void logCountSavedJobs(JoinPoint joinPoint) {
-		    Object[] args = joinPoint.getArgs();
+        int longCount = 0;
+        Long firstLong = null;
+        List<Long> longArgs = new ArrayList<>();
 
-		    if (args.length >= 1 && args[0] instanceof Long) {
-		        Long applicantId = (Long) args[0];
-		        saveActivity(applicantId, "COUNT_SAVED_JOBS");
-		    }
-		}
+        for (Object arg : args) {
+            if (arg instanceof Long) {
+                longCount++;
+                longArgs.add((Long) arg);
+                if (firstLong == null) {
+                    firstLong = (Long) arg;
+                }
+            } else if (arg instanceof Applicant && firstLong == null) {
+                firstLong = ((Applicant) arg).getId();
+            }
+        }
 
+        // -------------------- Code 1: Only 1 Long parameter --------------------
+        if (longCount == 1 && firstLong != null) {
+            saveActivity(firstLong, methodName);
+        }
+
+        // -------------------- Code 2: More than 1 Long parameter --------------------
+        else if (longCount > 1) {
+            Long applicantId = longArgs.get(1); // assuming 2nd Long is applicantId
+            saveActivity(applicantId, methodName);
+        }
+
+        // Set flag to prevent duplicate for this request
+        activityLogged.set(true);
+    }
 
 	private void saveActivity(Long userId, String action) {
 		UserActivity activity = new UserActivity();
@@ -128,5 +240,9 @@ public class UserActivityLogger {
 		System.out.println("-----------------iam in aspect repoooooooooo-----------");
 		repo.save(activity);
 	}
+	 @After("execution(* com.talentstream.controller.*.*(..))")
+	    public void clearFlag() {
+	        activityLogged.remove();
+	    }
 
 }
