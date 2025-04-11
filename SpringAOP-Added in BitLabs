@@ -61,16 +61,16 @@ public class UserActivityLogger {
 //
 //
 //	
-//	@AfterReturning(
-//		    pointcut = "execution(* com.talentstream.service.FinRecommendedJobService.recommendJobsForApplicant(..))", 
-//		    returning = "jobs")
-//		public void logRecommendedJobsViewed(JoinPoint joinPoint, Object jobs) {
-//		    Object[] args = joinPoint.getArgs();
-//		    if (args.length > 0 && args[0] instanceof Long) {
-//		        Long applicantId = (Long) args[0];
-//		        saveActivity(applicantId, "RECOMMENDED_JOBS_VIEWED");
-//		    }
-//		}
+	@AfterReturning(
+		    pointcut = "execution(* com.talentstream.service.FinRecommendedJobService.recommendJobsForApplicant(..))", 
+		    returning = "jobs")
+		public void logRecommendedJobsViewed(JoinPoint joinPoint, Object jobs) {
+		    Object[] args = joinPoint.getArgs();
+		    if (args.length > 0 && args[0] instanceof Long) {
+		        Long applicantId = (Long) args[0];
+		        saveActivity(applicantId, "RECOMMENDED_JOBS_VIEWED");
+		    }
+		}
 //	@AfterReturning(
 //		    pointcut = "execution(* com.talentstream.service.FinRecommendedJobService.countRecommendedJobsForApplicant(..))", 
 //		    returning = "count")
@@ -91,16 +91,16 @@ public class UserActivityLogger {
 	        saveActivity(userId, "GOOGLE_LOGIN");
 	    }
 	}
-
-	@AfterReturning(
-		    pointcut = "execution(* com.talentstream.service.RegisterService.login(..))",
-		    returning = "applicant")
-		public void logLogin(JoinPoint joinPoint, Object applicant) {
-		    if (applicant instanceof Applicant) {
-		        Long userId = ((Applicant) applicant).getId();
-		        saveActivity(userId, "LOGIN");
-		    }
-		}
+//
+//	@AfterReturning(
+//		    pointcut = "execution(* com.talentstream.service.RegisterService.login(..))",
+//		    returning = "applicant")
+//		public void logLogin(JoinPoint joinPoint, Object applicant) {
+//		    if (applicant instanceof Applicant) {
+//		        Long userId = ((Applicant) applicant).getId();
+//		        saveActivity(userId, "LOGIN");
+//		    }
+//		}
 	
 //	@AfterReturning(
 //		    pointcut = "execution(* com.talentstream.controller.*.*(..))",
@@ -157,81 +157,35 @@ public class UserActivityLogger {
 //	}
 	
 	
-//	@AfterReturning("execution(* com.talentstream.controller.*.*(..))")
-//	public void commonActivityLog1(JoinPoint joinPoint) {
-//	    String methodName = joinPoint.getSignature().getName();
-//	    System.out.println("Method Name is: " + methodName);
-//
-//	    
-//	    Object[] args = joinPoint.getArgs();
-//	  
-//
-//	    // Try to find userId or applicantId from the method arguments
-//	    Long userId = null;
-//	    for (Object arg : args) {
-//	        if (arg instanceof Long) {
-//	            userId = (Long) arg;
-//	            break; // only take the first Long if multiple are present
-//	        } else if (arg instanceof Applicant) {
-//	            Applicant applicant = (Applicant) arg;
-//	            userId = applicant.getId(); // assuming getId() exists
-//	            break;
-//	        }
-//	    }
-//
-//	    if (userId != null) {
-//	        saveActivity(userId, methodName);
-//	    } else {
-//	        System.out.println("User ID not found in method arguments.");
-//	    }
-//	}
-//
-//
+	@AfterReturning("execution(* com.talentstream.controller.*.*(..))")
+	public void commonActivityLog1(JoinPoint joinPoint) {
+	    String methodName = joinPoint.getSignature().getName();
+	    System.out.println("Method Name is: " + methodName);
+
+	    
+	    Object[] args = joinPoint.getArgs();
+	  
+
+	    //Try to find userId or applicantId from the method arguments
+	    Long userId = null;
+	    for (Object arg : args) {
+	        if (arg instanceof Long) {
+	            userId = (Long) arg;
+	            break; // only take the first Long if multiple are present
+	        } else if (arg instanceof Applicant) {
+	            Applicant applicant = (Applicant) arg;
+	            userId = applicant.getId(); // assuming getId() exists
+	            break;
+	        }
+	    }
+
+	    if (userId != null) {
+	        saveActivity(userId, methodName);
+	    } else {
+	        System.out.println("User ID not found in method arguments.");
+	    }
+	}
 	
-	
-	private static final ThreadLocal<Boolean> activityLogged = ThreadLocal.withInitial(() -> false);
-
-    @AfterReturning("execution(* com.talentstream.service.*.*(..))")
-    public void logUserActivity(JoinPoint joinPoint) {
-        // Prevent duplicate logging
-        if (activityLogged.get()) {
-            return;
-        }
-
-        String methodName = joinPoint.getSignature().getName();
-        Object[] args = joinPoint.getArgs();
-
-        int longCount = 0;
-        Long firstLong = null;
-        List<Long> longArgs = new ArrayList<>();
-
-        for (Object arg : args) {
-            if (arg instanceof Long) {
-                longCount++;
-                longArgs.add((Long) arg);
-                if (firstLong == null) {
-                    firstLong = (Long) arg;
-                }
-            } else if (arg instanceof Applicant && firstLong == null) {
-                firstLong = ((Applicant) arg).getId();
-            }
-        }
-
-        // -------------------- Code 1: Only 1 Long parameter --------------------
-        if (longCount == 1 && firstLong != null) {
-            saveActivity(firstLong, methodName);
-        }
-
-        // -------------------- Code 2: More than 1 Long parameter --------------------
-        else if (longCount > 1) {
-            Long applicantId = longArgs.get(1); // assuming 2nd Long is applicantId
-            saveActivity(applicantId, methodName);
-        }
-
-        // Set flag to prevent duplicate for this request
-        activityLogged.set(true);
-    }
-
 	private void saveActivity(Long userId, String action) {
 		UserActivity activity = new UserActivity();
 		activity.setUserId(userId);
@@ -240,9 +194,68 @@ public class UserActivityLogger {
 		System.out.println("-----------------iam in aspect repoooooooooo-----------");
 		repo.save(activity);
 	}
-	 @After("execution(* com.talentstream.controller.*.*(..))")
-	    public void clearFlag() {
-	        activityLogged.remove();
-	    }
-
 }
+//
+//
+	
+	
+//	private static final ThreadLocal<Boolean> activityLogged = ThreadLocal.withInitial(() -> false);
+//
+//    @AfterReturning("execution(* com.talentstream.controller.*.*(..))")
+//    public void logUserActivity(JoinPoint joinPoint) {
+//        // Prevent duplicate logging
+//    	System.out.println("----------calling activity 1---------");
+//        if (activityLogged.get()) {
+//            return;
+//        }
+//        System.out.println("----------calling activity 2---------");
+//        String methodName = joinPoint.getSignature().getName();
+//        Object[] args = joinPoint.getArgs();
+//
+//        int longCount = 0;
+//        Long firstLong = null;
+//        List<Long> longArgs = new ArrayList<>();
+//        System.out.println("----------calling activity 3---------");
+//
+//        for (Object arg : args) {
+//            if (arg instanceof Long) {
+//                longCount++;
+//                longArgs.add((Long) arg);
+//                if (firstLong == null) {
+//                    firstLong = (Long) arg;
+//                }
+//                System.out.println("----------calling activity 4---------");
+//            } else if (arg instanceof Applicant && firstLong == null) {
+//                firstLong = ((Applicant) arg).getId();
+//            }
+//        }
+//
+//        // -------------------- Code 1: Only 1 Long parameter --------------------
+//        if (longCount == 1 || longCount==0 && firstLong != null) {
+//            saveActivity(firstLong, methodName);
+//        }
+//
+//        // -------------------- Code 2: More than 1 Long parameter --------------------
+//        else if (longCount > 1) {
+//            Long applicantId = longArgs.get(1); // assuming 2nd Long is applicantId
+//            saveActivity(applicantId, methodName);
+//        }
+//
+//        // Set flag to prevent duplicate for this request
+//        activityLogged.set(true);
+//    }
+//
+//	private void saveActivity(Long userId, String action) {
+//		UserActivity activity = new UserActivity();
+//		activity.setUserId(userId);
+//		activity.setActionType(action);
+//		activity.setTimestamp(LocalDateTime.now());
+//		System.out.println("-----------------iam in aspect repoooooooooo-----------");
+//		repo.save(activity);
+//	}
+//	 @After("execution(* com.talentstream.controller.*.*(..))")
+//	    public void clearFlag() {
+//	        activityLogged.remove();
+//	    }
+//
+//}
